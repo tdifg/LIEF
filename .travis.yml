@@ -143,7 +143,7 @@ install:
 script:
   - cmake -DCMAKE_C_COMPILER=$C_COMPILER -DCMAKE_CXX_COMPILER=$CXX_COMPILER -DPYTHON_VERSION=$PYTHON_VERSION -DPYTHON_INCLUDE_DIR=$PYTHON_INCLUDE_DIR -DPYTHON_LIBRARY=$PYTHON_LIBRARY -DPYTHON_EXECUTABLE=$PYTHON_BINARY -DLIEF_TESTS=on  -DLIEF_COVERAGE=${GCOV:-OFF} -DLIEF_DOC=${LIEF_DOC:-OFF} ..
   - make -j2
-  - if [ "$GCOV" == "ON" ]; then sudo make lief_coverage; else sudo make check-lief; fi
+  - travis_wait 90 if [ "$GCOV" == "ON" ]; then sudo make lief_coverage; else sudo make check-lief; fi
 
 after_success:
   - make package
