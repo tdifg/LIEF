@@ -35,6 +35,18 @@ matrix:
               packages: ['g++-6', 'gcc-6', 'ccache', 'python3.6-dev', 'python-sphinx']
           env: [ CXX_COMPILER=g++-6, C_COMPILER=gcc-6, PYTHON_VERSION=3.6, PYTHON_INCLUDE_DIR=/usr/include/python3.6m, PYTHON_LIBRARY=/usr/lib/libpython3.6m.so, PYTHON_BINARY=/usr/bin/python3.6, LIEF_DOC=OFF]
 
+
+        # Linux gcc 5.0 - Python 3.6 - Coverage
+        - os: linux
+          dist: trusty
+          compiler: gcc
+          addons:
+            apt:
+              sources: ['ubuntu-toolchain-r-test', 'deadsnakes']
+              packages: ['g++-5', 'gcc-5', 'ccache', 'python3.6-dev']
+          env: [ CXX_COMPILER=g++-5, C_COMPILER=gcc-5, PYTHON_VERSION=3.6, PYTHON_INCLUDE_DIR=/usr/include/python3.6m, PYTHON_LIBRARY=/usr/lib/libpython3.6m.so, PYTHON_BINARY=/usr/bin/python3.6, LIEF_DOC=OFF, GCOV=ON]
+
+
         # OSX 10.11 - xcode 7.3 - Python 2.7
         - os: osx
           osx_image: xcode7.3
@@ -129,9 +141,9 @@ install:
 
 
 script:
-  - cmake -DCMAKE_C_COMPILER=$C_COMPILER -DCMAKE_CXX_COMPILER=$CXX_COMPILER -DPYTHON_VERSION=$PYTHON_VERSION -DPYTHON_INCLUDE_DIR=$PYTHON_INCLUDE_DIR -DPYTHON_LIBRARY=$PYTHON_LIBRARY -DPYTHON_EXECUTABLE=$PYTHON_BINARY -DLIEF_TESTS=on  -DLIEF_DOC=${LIEF_DOC:-OFF} ..
+  - cmake -DCMAKE_C_COMPILER=$C_COMPILER -DCMAKE_CXX_COMPILER=$CXX_COMPILER -DPYTHON_VERSION=$PYTHON_VERSION -DPYTHON_INCLUDE_DIR=$PYTHON_INCLUDE_DIR -DPYTHON_LIBRARY=$PYTHON_LIBRARY -DPYTHON_EXECUTABLE=$PYTHON_BINARY -DLIEF_TESTS=on  -DLIEF_COVERAGE=${GCOV:-OFF} -DLIEF_DOC=${LIEF_DOC:-OFF} ..
   - make -j2
-  - sudo make check-lief
+  - if [ "$GCOV" == "ON" ]; then sudo make lief_coverage; else sudo make check-lief; fi
 
 after_success:
   - make package
@@ -141,6 +153,8 @@ after_success:
   - $PYTHON_BINARY setup.py sdist
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then bash -c 'cd dist && for f in *.tar.gz; do mv $f "linux_${f%.tar.gz}_py${PYTHON_VERSION}.tar.gz"; done' ;fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then bash -c 'cd dist && for f in *.tar.gz; do mv $f "osx_${f%.tar.gz}_py$PYTHON_VERSION.tar.gz"; done' ;fi
+  - if [ "$GCOV" == "ON" ]; then lcov --list coverage.info; fi
+  - if [ "$GCOV" == "ON" ]; then bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"; fi
 
 
 deploy:
@@ -153,6 +167,5 @@ deploy:
     - ${TRAVIS_BUILD_DIR}/build/*.tar.gz
   skip_cleanup: true
   on:
-    #branch: master
     tags: true
 
