@@ -67,7 +67,6 @@ install:
   - ps: if ($env:PLATFORM -eq "x86") { $env:PYTHON_INCLUDE = $env:PYTHON32_INCLUDE }
   - ps: if ($env:PLATFORM -eq "x86") { $env:PYTHON_BINARY  = $env:PYTHON32_BINARY }
   - ps: if ($env:PLATFORM -eq "x86") { $env:PYTHON_LIBRARY = $env:PYTHON32_LIBRARY }
-
   - set PATH=%PYTHON_PATH%;%PATH%
 
 build_script:
