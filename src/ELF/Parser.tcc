@@ -331,6 +331,8 @@ void Parser::parse_binary(void) {
     try {
       //const uint64_t symbol_hash_offset = this->binary_->virtual_address_to_offset((*itSymbolHash)->value());
     } catch (const conversion_error&) {
+    } catch (const corrupted& e) {
+      LOG(WARNING) << e.what();
     }
   }
 
@@ -340,6 +342,8 @@ void Parser::parse_binary(void) {
       const uint64_t symbol_gnu_hash_offset = this->binary_->virtual_address_to_offset((*it_symbol_gnu_hash)->value());
       this->parse_symbol_gnu_hash<ELF_T>(symbol_gnu_hash_offset);
     } catch (const conversion_error&) {
+    } catch (const corrupted& e) {
+      LOG(WARNING) << e.what();
     }
   }
 
