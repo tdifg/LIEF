@@ -472,7 +472,8 @@ uint32_t Parser::nb_dynsym_gnu_hash(void) const {
     ++nb_symbols;
     ++hash_values;
   }
-  return nb_symbols;
+
+  return ++nb_symbols;
 
 
 }
