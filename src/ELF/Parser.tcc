@@ -386,6 +386,97 @@ void Parser::parse_header(void) {
   }
 }
 
+
+template<typename ELF_T>
+uint32_t Parser::get_numberof_dynamic_symbols(void) const {
+
+  if (this->binary_->has_dynamic_entry(DYNAMIC_TAGS::DT_HASH)) {
+    return this->nb_dynsym_sysv_hash<ELF_T>();
+  }
+
+  if (this->binary_->has_dynamic_entry(DYNAMIC_TAGS::DT_GNU_HASH)) {
+    return this->nb_dynsym_gnu_hash<ELF_T>();
+  }
+
+  throw not_supported("Unable to determine the number of dynamic symbols");
+}
+
+
+template<typename ELF_T>
+uint32_t Parser::nb_dynsym_sysv_hash(void) const {
+  const DynamicEntry& dyn_hash = this->binary_->dynamic_entry_from_tag(DYNAMIC_TAGS::DT_HASH);
+  const uint64_t offset = this->binary_->virtual_address_to_offset(dyn_hash.value());
+
+  return 0;
+}
+
+template<typename ELF_T>
+uint32_t Parser::nb_dynsym_gnu_hash(void) const {
+  using uint__ = typename ELF_T::uint;
+
+  const DynamicEntry& dyn_hash = this->binary_->dynamic_entry_from_tag(DYNAMIC_TAGS::DT_GNU_HASH);
+  const uint64_t offset = this->binary_->virtual_address_to_offset(dyn_hash.value());
+
+  uint64_t current_offset = offset;
+
+  const uint32_t* header = reinterpret_cast<const uint32_t*>(
+      this->stream_->read(current_offset, 4 * sizeof(uint32_t)));
+
+  current_offset += 4 * sizeof(uint32_t);
+
+  const uint32_t nbuckets  = header[0];
+  const uint32_t symndx    = header[1];
+  const uint32_t maskwords = header[2];
+  const uint32_t shift2    = header[3];
+
+  if (maskwords & (maskwords - 1)) {
+    LOG(WARNING) << "maskwords is not a power of 2";
+  }
+
+  std::vector<uint64_t> bloom_filters;
+  try {
+    bloom_filters.resize(maskwords);
+
+    for (size_t i = 0; i < maskwords; ++i) {
+      bloom_filters[i] = this->stream_->read_integer<uint__>(current_offset);
+      current_offset += sizeof(uint__);
+    }
+  }
+  catch (const read_out_of_bound&) {
+    throw corrupted("GNU Hash, maskwords corrupted");
+  }
+  catch (const std::bad_alloc&) {
+    throw corrupted("GNU Hash, maskwords corrupted");
+  }
+
+  std::vector<uint32_t> buckets;
+  buckets.reserve(std::min<uint32_t>(nbuckets, 400));
+  try {
+    const uint32_t* hash_buckets = reinterpret_cast<const uint32_t*>(
+        this->stream_->read(current_offset, nbuckets * sizeof(uint32_t)));
+    current_offset += nbuckets * sizeof(uint32_t);
+
+    buckets = {hash_buckets, hash_buckets + nbuckets};
+  } catch (const read_out_of_bound&) {
+    throw corrupted("GNU Hash, hash_buckets corrupted");
+  }
+  uint32_t nb_symbols = *std::max_element(std::begin(buckets), std::end(buckets));
+  nb_symbols = std::max(nb_symbols, symndx);
+
+  const uint32_t* hash_values = reinterpret_cast<const uint32_t*>(
+      this->stream_->read(current_offset, nb_symbols * sizeof(uint32_t)));
+
+
+  // "It is set to 1 when a symbol is the last symbol in a given hash chain"
+  while (((*hash_values) & 1) == 0) {
+    ++nb_symbols;
+    ++hash_values;
+  }
+  return nb_symbols;
+
+
+}
+
 template<typename ELF_T>
 void Parser::parse_sections(void) {
   using Elf_Shdr = typename ELF_T::Elf_Shdr;
@@ -584,26 +675,7 @@ void Parser::parse_dynamic_symbols(uint64_t offset, uint64_t size) {
   using Elf_Sym = typename ELF_T::Elf_Sym;
   LOG(DEBUG) << "[+] Parsing dynamics symbols";
 
-  auto&& it_dynamic_section = std::find_if(
-      std::begin(this->binary_->sections_),
-      std::end(this->binary_->sections_),
-      [] (const Section* section)
-      {
-        return section != nullptr and section->type() == SECTION_TYPES::SHT_DYNSYM;
-      });
-
-
-  // TODO:
-  // Not use sections to count dynamic symbols but for examples:
-  // * Dynamic + plt/got relocations
-  // * GNU hash table (dynsym)
-  // * Symbol version definitions
-  uint32_t nb_symbols = static_cast<uint32_t>(size / sizeof(Elf_Sym));
-
-  if (it_dynamic_section != std::end(this->binary_->sections_)) {
-    const uint64_t section_size = (*it_dynamic_section)->size();
-    nb_symbols = static_cast<uint32_t>((section_size / sizeof(Elf_Sym)));
-  }
+  uint32_t nb_symbols = this->get_numberof_dynamic_symbols<ELF_T>();
 
   const uint64_t dynamic_symbols_offset = offset;
   const uint64_t string_offset = this->get_dynamic_string_table();

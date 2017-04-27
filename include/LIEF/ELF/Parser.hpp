@@ -88,6 +88,16 @@ class DLL_PUBLIC Parser : public LIEF::Parser {
 
     uint64_t get_dynamic_string_table_from_sections(void) const;
 
+    //! @brief Return the number of dynamic symbols
+    template<typename ELF_T>
+    uint32_t get_numberof_dynamic_symbols(void) const;
+
+    template<typename ELF_T>
+    uint32_t nb_dynsym_sysv_hash(void) const;
+
+    template<typename ELF_T>
+    uint32_t nb_dynsym_gnu_hash(void) const;
+
     template<typename ELF_T>
     void parse_dynamic_entries(uint64_t offset, uint64_t size);
 
