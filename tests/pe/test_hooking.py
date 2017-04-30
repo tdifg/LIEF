@@ -87,12 +87,8 @@ class TestHooking(TestCase):
 
             q = Popen(["taskkill", "/im", "pe64_hooking.exe"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-            p.communicate()
-
             stdout, _ = p.communicate()
             self.logger.debug(stdout.decode("utf8"))
-
-            q.communicate()
 
             stdout, _ = q.communicate()
             self.logger.debug(stdout.decode("utf8"))
