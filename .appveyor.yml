@@ -75,7 +75,8 @@ build_script:
   - cmake --build . --config Release --target ALL_BUILD -- /v:m /logger:%MSBuildLogger%
 
 test_script:
- - cmake --build . --config Release --target RUN_TESTS -- /v:m /logger:%MSBuildLogger%
+  #- cmake --build . --config Release --target RUN_TESTS -- /v:m /logger:%MSBuildLogger%
+  - ctest.exe --verbose -R PE_PYTHON_hooking
 
 after_build:
   - cmake --build . --config Release --target package -- /v:m /logger:%MSBuildLogger%
