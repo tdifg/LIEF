@@ -82,6 +82,7 @@ after_build:
   - cd api\python
   - python.exe .\setup.py sdist --formats=zip && exit 0 # Ignore warnings...
   - ps: gci dist\*.zip | % { rename-item –path $_.Fullname –Newname ( "windows_" + $env:PLATFORM + "_" + $_.basename + "_py" + $env:PYTHON_VERSION + $_.extension) }
+  - cd ..\..
 
 artifacts:
   - path: '*.zip'
