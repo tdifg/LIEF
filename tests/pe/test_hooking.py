@@ -81,20 +81,24 @@ class TestHooking(TestCase):
         os.chmod(output, st.st_mode | stat.S_IEXEC)
 
         if sys.platform.startswith("win32"):
-            #p = Popen(["START", output, "foo"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            p = Popen(["START", "notepad.exe"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            p = Popen(["START", output, "foo"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
             time.sleep(3)
 
-            q = Popen(["taskkill", "/im", "notepad.exe"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            q = Popen(["taskkill", "/im", "pe64_hooking.exe"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
             p.communicate()
+
+            stdout, _ = p.communicate()
+            self.logger.debug(stdout.decode("utf8"))
+
             q.communicate()
+
+            stdout, _ = q.communicate()
+            self.logger.debug(stdout.decode("utf8"))
 
             self.assertEqual(q.returncode, 0)
 
-        #stdout, _ = p.communicate()
-        #self.logger.debug(stdout.decode("utf8"))
         #self.assertIsNotNone(re.search(r'LIEF is Working', stdout.decode("utf8")))
 
 
