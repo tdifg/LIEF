@@ -25,10 +25,9 @@ class TestHooking(TestCase):
         self.tmp_dir = tempfile.mkdtemp(suffix='_lief_test_hooking')
         self.logger.debug("temp dir: {}".format(self.tmp_dir))
 
-        if sys.platform.startswith("win32"):
+        if sys.platform.startswith("win"):
             SEM_NOGPFAULTERRORBOX = 0x0002 # From MSDN
             ctypes.windll.kernel32.SetErrorMode(SEM_NOGPFAULTERRORBOX);
-            subprocess_flags = 0x8000000 #win32con.CREATE_NO_WINDOW?
 
 
     def test_hook_64(self):
@@ -80,8 +79,9 @@ class TestHooking(TestCase):
         st = os.stat(output)
         os.chmod(output, st.st_mode | stat.S_IEXEC)
 
-        if sys.platform.startswith("win32"):
-            p = Popen(["START", output, "foo"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        if sys.platform.startswith("win"):
+            subprocess_flags = 0x8000000 #win32con.CREATE_NO_WINDOW?
+            p = Popen(["START", output, "foo"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, creationflags=subprocess_flags)
 
             time.sleep(3)
 
