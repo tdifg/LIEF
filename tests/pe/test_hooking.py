@@ -81,7 +81,7 @@ class TestHooking(TestCase):
 
         if sys.platform.startswith("win"):
             subprocess_flags = 0x8000000 #win32con.CREATE_NO_WINDOW?
-            p = Popen(["START", output, "foo"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, creationflags=subprocess_flags)
+            p = Popen(["START", output], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, creationflags=subprocess_flags)
 
             time.sleep(3)
 
